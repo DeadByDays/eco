@@ -11,6 +11,9 @@ on:
     paths:
       - '**/*.kt'
       - '**/*.kts'
+  push:
+    tags:
+      - 'v*.*.*'
   workflow_dispatch:
 
 concurrency:
@@ -35,13 +38,22 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Get version
+        id: version
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          else
+            echo "version=dev-${{ github.sha }}" >> $GITHUB_OUTPUT
+          fi
+
       - name: Build
         run: ./gradlew build --full-stacktrace
 
       - name: Upload plugin artifact
         uses: actions/upload-artifact@v4
         with:
-          name: plugin-${{ github.sha }}
+          name: plugin-${{ steps.version.outputs.version }}
           path: |
             **/build/libs/*.jar
             !**/build/libs/*-sources.jar
