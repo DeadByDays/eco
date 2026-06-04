@@ -71,9 +71,6 @@ allprojects {
         // WorldGuard
         maven("https://maven.enginehub.org/repo/")
 
-        // FactionsUUID
-        //maven("https://ci.ender.zone/plugin/repository/everything/")
-
         // MythicMobs
         maven("https://mvn.lumine.io/repository/maven-public/")
 
@@ -101,10 +98,18 @@ allprojects {
         // CraftEngine
         maven("https://repo.momirealms.net/releases/")
 
-        // ExcellentEconomy and ExcellentShop
-        maven("https://repo.nightexpressdev.com/releases")
+        // ExcellentEconomy and ExcellentShop — тільки для їх груп
+        exclusiveContent {
+            forRepository {
+                maven("https://repo.nightexpressdev.com/releases")
+            }
+            filter {
+                includeGroup("su.nightexpress")
+                includeGroup("su.nightexpress.nightcore")
+            }
+        }
 
-        //Towny
+        // Towny
         maven("https://repo.glaremasters.me/repository/towny/")
 
         // FactionsUUID
@@ -112,7 +117,6 @@ allprojects {
             forRepository {
                 maven("https://dependency.download/releases")
             }
-
             filter {
                 includeGroup("dev.kitteh")
             }
@@ -183,7 +187,6 @@ allprojects {
         test {
             useJUnitPlatform()
 
-            // Show test results.
             testLogging {
                 events("passed", "skipped", "failed")
             }
@@ -212,18 +215,13 @@ tasks {
         duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 
         relocate("org.apache.commons.lang3", "com.willfp.eco.libs.lang3")
-relocate("org.intellij", "com.willfp.eco.libs.intellij")
+        relocate("org.intellij", "com.willfp.eco.libs.intellij")
         relocate("org.jetbrains.annotations", "com.willfp.eco.libs.jetbrains.annotations")
         relocate("com.willfp.modelenginebridge", "com.willfp.eco.libs.modelenginebridge")
 
         relocate("kotlin", "com.willfp.eco.libs.kotlin") {
             exclude("kotlin.kotlin_builtins")
         }
-
-        /*
-        Caffeine is not shaded so that it can be accessed directly by eco plugins.
-        Also, not relocating adventure, because it's a pain in the ass, and it doesn't *seem* to be causing loader constraint violations.
-         */
     }
 }
 
