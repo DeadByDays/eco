@@ -6,7 +6,6 @@ import com.willfp.eco.core.items.HashedItem
 import com.willfp.eco.core.packet.PacketEvent
 import com.willfp.eco.core.packet.PacketListener
 import com.willfp.eco.internal.spigot.proxy.common.asBukkitStack
-import com.willfp.eco.internal.spigot.proxy.common.asNMSStack
 import com.willfp.eco.internal.spigot.proxy.common.packet.display.frame.DisplayFrame
 import com.willfp.eco.internal.spigot.proxy.common.packet.display.frame.lastDisplayFrame
 import java.util.UUID
@@ -44,11 +43,32 @@ open class PacketWindowItems(
             player.lastDisplayFrame = DisplayFrame.EMPTY
         }
 
-        val itemStacks = packet.items.map { it.asBukkitStack() }
+        // Process items in-place via NMS mirrors to preserve all custom components
+        // (e.g. CraftEngine attribute_modifiers). Do NOT replace the packet item list,
+        // as asNMSStack() may return copies that miss components added by other plugins.
+        if (plugin.configYml.getBool("use-display-frame") && windowId == 0) {
+            val itemStacks = packet.items.map { it.asBukkitStack() }
 
-        val newItems = modifyWindowItems(itemStacks.toMutableList(), windowId, player)
+            val frameMap = mutableMapOf<Byte, HashedItem>()
+            for (index in itemStacks.indices) {
+                frameMap[index.toByte()] = HashedItem.of(itemStacks[index])
+            }
 
-        field.set(packet, newItems.map { it.asNMSStack() })
+            val newFrame = DisplayFrame(frameMap)
+            val lastFrame = player.lastDisplayFrame
+            player.lastDisplayFrame = newFrame
+
+            val changes = lastFrame.getChangedSlots(newFrame)
+
+            // Apply display only to changed items, modifying their NMS handle in-place
+            for (index in changes) {
+                Display.display(itemStacks[index.toInt()], player)
+            }
+            // Unchanged items are left as-is in the packet (no list replacement)
+        } else {
+            // For GUIs and non-frame mode: modify each item in-place via its NMS mirror
+            packet.items.forEach { Display.display(it.asBukkitStack(), player) }
+        }
     }
 
 
